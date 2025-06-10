@@ -11,37 +11,179 @@ import networkx as nx
 import matplotlib.pyplot as plt
 
 
-def graph():
-    G = nx.DiGraph()
-    G.add_nodes_from(
-        [
-            "Router",
-            "getAll",
-            "postNewOne",
-            "MainPage",
-            "getDetailsByOne",
-            "ThePost",
-            "UserForm",
-            "PostsPage",
-        ]
-    )
-    G.add_edges_from(
-        [
-            ("Router", "getAll"),
-            ("Router", "postNewOne"),
-            ("Router", "getDetailsByOne"),
-            ("getAll", "MainPage"),
-            ("getAll", "PostsPage"),
-            ("postNewOne", "UserForm"),
-            ("getDetailsByOne", "ThePost"),
-        ]
-    )
+def firstAndSecond():
+    data = {
+        "Router": ["getAll", "postNewOne", "getDetailsByOne"],
+        "getAll": ["MainPage", "PostsPage"],
+        "postNewOne": ["UserForm"],
+        "getDetailsByOne": ["ThePost"],
+        "MainPage": [],
+        "PostsPage": [],
+        "UserForm": [],
+        "ThePost": [],
+    }
+    G = nx.DiGraph(data)
     num_nodes = G.number_of_nodes()
     num_edges = G.number_of_edges()
     print(f"Number of edges:{num_edges}\nNumber of nodes:{num_nodes}")
-
     nx.draw(G, with_labels=True)
+
+    dfs_tree = nx.dfs_tree(G, source="Router")
+    print(list(dfs_tree.edges()))
+    bfs_tree = nx.bfs_tree(G, source="Router")
+    print(list(bfs_tree.edges()))
     plt.show()
 
 
-graph()
+def sigizmund():
+    data = {
+        "Kyiv": {
+            "Donetsk": 650,
+            "Kharkiv": 480,
+            "Lviv": 540,
+            "Poltava": 330,
+            "Frankivsk": 480,
+            "Zaporizhzhia": 520,
+            "Dnepr": 480,
+        },
+        "Donetsk": {
+            "Kyiv": 650,
+            "Kharkiv": 300,
+            "Lviv": 1100,
+            "Poltava": 380,
+            "Frankivsk": 980,
+            "Zaporizhzhia": 200,
+            "Dnepr": 230,
+        },
+        "Kharkiv": {
+            "Kyiv": 480,
+            "Donetsk": 300,
+            "Lviv": 800,
+            "Poltava": 150,
+            "Frankivsk": 750,
+            "Zaporizhzhia": 350,
+            "Dnepr": 220,
+        },
+        "Lviv": {
+            "Kyiv": 540,
+            "Donetsk": 1100,
+            "Kharkiv": 800,
+            "Poltava": 650,
+            "Frankivsk": 140,
+            "Zaporizhzhia": 900,
+            "Dnepr": 750,
+        },
+        "Poltava": {
+            "Kyiv": 330,
+            "Donetsk": 380,
+            "Kharkiv": 150,
+            "Lviv": 650,
+            "Frankivsk": 600,
+            "Zaporizhzhia": 280,
+            "Dnepr": 150,
+        },
+        "Frankivsk": {
+            "Kyiv": 480,
+            "Donetsk": 980,
+            "Kharkiv": 750,
+            "Lviv": 140,
+            "Poltava": 600,
+            "Zaporizhzhia": 850,
+            "Dnepr": 680,
+        },
+        "Zaporizhzhia": {
+            "Kyiv": 520,
+            "Donetsk": 200,
+            "Kharkiv": 350,
+            "Lviv": 900,
+            "Poltava": 280,
+            "Frankivsk": 850,
+            "Dnepr": 80,
+        },
+        "Dnepr": {
+            "Kyiv": 480,
+            "Donetsk": 230,
+            "Kharkiv": 220,
+            "Lviv": 750,
+            "Poltava": 150,
+            "Frankivsk": 680,
+            "Zaporizhzhia": 80,
+        },
+    }
+
+    G = nx.Graph()
+
+    for city1, neighbors in data.items():
+        for city2, weight in neighbors.items():
+            G.add_edge(city1, city2, weight=weight)
+
+    shortest_paths = nx.single_source_dijkstra_path(G, source="Kyiv", weight="weight")
+    shortest_path_lengths = nx.single_source_dijkstra_path_length(
+        G, source="Kyiv", weight="weight"
+    )
+
+    plt.figure(figsize=(15, 10))
+
+    pos = {
+        "Kyiv": (30.5, 50.4),
+        "Kharkiv": (36.2, 49.9),
+        "Donetsk": (37.8, 48.0),
+        "Dnepr": (35.0, 48.5),
+        "Zaporizhzhia": (35.2, 47.8),
+        "Poltava": (34.5, 49.6),
+        "Lviv": (24.0, 49.8),
+        "Frankivsk": (24.7, 48.9),
+    }
+
+    nx.draw_networkx_nodes(G, pos, node_color="lightblue", node_size=2000, alpha=0.9)
+    nx.draw_networkx_labels(G, pos, font_size=10, font_weight="bold")
+
+    nx.draw_networkx_edges(G, pos, alpha=0.6, width=1, edge_color="gray")
+
+    edge_labels = nx.get_edge_attributes(G, "weight")
+    nx.draw_networkx_edge_labels(G, pos, edge_labels, font_size=8)
+
+    colors = ["red", "blue", "green", "orange", "purple", "brown", "pink"]
+    for i, (city, path) in enumerate(shortest_paths.items()):
+        if city != "Kyiv" and len(path) > 1:
+            path_edges = [(path[j], path[j + 1]) for j in range(len(path) - 1)]
+            nx.draw_networkx_edges(
+                G,
+                pos,
+                edgelist=path_edges,
+                edge_color=colors[i % len(colors)],
+                width=3,
+                alpha=0.7,
+            )
+
+    plt.title("Граф міст України з найкоротшими шляхами до Київа", fontsize=16)
+    plt.axis("off")
+    plt.tight_layout()
+    plt.show()
+
+    plt.figure(figsize=(12, 6))
+    cities = list(shortest_path_lengths.keys())
+    distances = list(shortest_path_lengths.values())
+
+    bars = plt.bar(cities, distances, color="skyblue", alpha=0.7)
+    plt.title("Найкоротші шляхи від Київа до інших міст", fontsize=14)
+    plt.xlabel("Місто", fontsize=12)
+    plt.ylabel("Відстань (км)", fontsize=12)
+    plt.xticks(rotation=45)
+
+    for bar, distance in zip(bars, distances):
+        plt.text(
+            bar.get_x() + bar.get_width() / 2,
+            bar.get_height() + 10,
+            f"{distance}",
+            ha="center",
+            va="bottom",
+            fontweight="bold",
+        )
+
+    plt.tight_layout()
+    plt.show()
+
+
+firstAndSecond()
+sigizmund()
