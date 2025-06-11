@@ -9,6 +9,39 @@
 # Реалізуйте алгоритм Дейкстри для знаходження найкоротшого шляху в розробленому графі: додайте у граф ваги до ребер та знайдіть найкоротший шлях між всіма вершинами графа.
 import networkx as nx
 import matplotlib.pyplot as plt
+from collections import deque
+
+
+def dfs_manual(graph, start):
+    visited = set()
+    edges = []
+
+    def dfs(node):
+        visited.add(node)
+        for neighbor in graph[node]:
+            if neighbor not in visited:
+                edges.append((node, neighbor))
+                dfs(neighbor)
+
+    dfs(start)
+    return edges
+
+
+def bfs_manual(graph, start):
+    visited = set()
+    queue = deque([start])
+    edges = []
+
+    while queue:
+        node = queue.popleft()
+        if node not in visited:
+            visited.add(node)
+            for neighbor in graph[node]:
+                if neighbor not in visited:
+                    edges.append((node, neighbor))
+                    queue.append(neighbor)
+
+    return edges
 
 
 def firstAndSecond():
@@ -28,11 +61,32 @@ def firstAndSecond():
     print(f"Number of edges:{num_edges}\nNumber of nodes:{num_nodes}")
     nx.draw(G, with_labels=True)
 
-    dfs_tree = nx.dfs_tree(G, source="Router")
-    print(list(dfs_tree.edges()))
-    bfs_tree = nx.bfs_tree(G, source="Router")
-    print(list(bfs_tree.edges()))
+    dfs_tree = dfs_manual(data, "Router")
+    print(list(dfs_tree))
+    bfs_tree = bfs_manual(data, "Router")
+    print(list(bfs_tree))
     plt.show()
+
+
+def dijkstra_manual(graph, start):
+    distances = {node: float("infinity") for node in graph}
+    distances[start] = 0
+    paths = {node: [] for node in graph}
+    paths[start] = [start]
+    unvisited = set(graph.keys())
+    while unvisited:
+        current = min(unvisited, key=lambda node: distances[node])
+        if distances[current] == float("infinity"):
+            break
+        unvisited.remove(current)
+        for neighbor, weight in graph[current].items():
+            if neighbor in unvisited:
+                new_distance = distances[current] + weight
+                if new_distance < distances[neighbor]:
+                    distances[neighbor] = new_distance
+                    paths[neighbor] = paths[current] + [neighbor]
+
+    return distances, paths
 
 
 def sigizmund():
@@ -111,18 +165,18 @@ def sigizmund():
         },
     }
 
-    G = nx.Graph()
+    distances, paths = dijkstra_manual(data, "Kyiv")
 
+    for city, distance in distances.items():
+        if city != "Kyiv":
+            print(
+                f"Найкоротший шлях до {city}: {' -> '.join(paths[city])} ({distance} км)"
+            )
+
+    G = nx.Graph()
     for city1, neighbors in data.items():
         for city2, weight in neighbors.items():
             G.add_edge(city1, city2, weight=weight)
-
-    shortest_paths = nx.single_source_dijkstra_path(G, source="Kyiv", weight="weight")
-    shortest_path_lengths = nx.single_source_dijkstra_path_length(
-        G, source="Kyiv", weight="weight"
-    )
-
-    plt.figure(figsize=(15, 10))
 
     pos = {
         "Kyiv": (30.5, 50.4),
@@ -135,16 +189,15 @@ def sigizmund():
         "Frankivsk": (24.7, 48.9),
     }
 
+    plt.figure(figsize=(15, 10))
     nx.draw_networkx_nodes(G, pos, node_color="lightblue", node_size=2000, alpha=0.9)
     nx.draw_networkx_labels(G, pos, font_size=10, font_weight="bold")
-
     nx.draw_networkx_edges(G, pos, alpha=0.6, width=1, edge_color="gray")
-
     edge_labels = nx.get_edge_attributes(G, "weight")
     nx.draw_networkx_edge_labels(G, pos, edge_labels, font_size=8)
 
     colors = ["red", "blue", "green", "orange", "purple", "brown", "pink"]
-    for i, (city, path) in enumerate(shortest_paths.items()):
+    for i, (city, path) in enumerate(paths.items()):
         if city != "Kyiv" and len(path) > 1:
             path_edges = [(path[j], path[j + 1]) for j in range(len(path) - 1)]
             nx.draw_networkx_edges(
@@ -162,16 +215,16 @@ def sigizmund():
     plt.show()
 
     plt.figure(figsize=(12, 6))
-    cities = list(shortest_path_lengths.keys())
-    distances = list(shortest_path_lengths.values())
+    cities = [city for city in distances.keys() if city != "Kyiv"]
+    distances_values = [distances[city] for city in cities]
 
-    bars = plt.bar(cities, distances, color="skyblue", alpha=0.7)
+    bars = plt.bar(cities, distances_values, color="skyblue", alpha=0.7)
     plt.title("Найкоротші шляхи від Київа до інших міст", fontsize=14)
     plt.xlabel("Місто", fontsize=12)
     plt.ylabel("Відстань (км)", fontsize=12)
     plt.xticks(rotation=45)
 
-    for bar, distance in zip(bars, distances):
+    for bar, distance in zip(bars, distances_values):
         plt.text(
             bar.get_x() + bar.get_width() / 2,
             bar.get_height() + 10,
